@@ -296,6 +296,9 @@
                             <button type="button" id="enterLocalPracticeBtn" class="w-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2" title="在預覽沙盒、本機直接開啟 HTML 或未授權網域時可一鍵進入完整工作台">
                                 <i class="fa-solid fa-bolt"></i> 免驗證 / 本機預覽直接進入實戰工作台
                             </button>
+                            <button type="button" id="clearDomainStorageBtn" class="hidden w-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-gold font-bold py-2 px-4 rounded-xl text-xs transition-all items-center justify-center gap-2">
+                                <i class="fa-solid fa-broom"></i> 偵測到瀏覽器儲存空間已滿：點此一鍵釋放快取（保留 API Key）
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1559,7 +1562,7 @@
     <script>
         (function () {
             // =========================================================================
-            // 1. 全域設定與防卡死雲端連線架構（移除易被攔截的靜態 analytics 並加上逾時保護）
+            // 1. 全域設定與防卡死雲端連線架構（含 Storage Quota 滿載自動繞道保護）
             // =========================================================================
             const firebaseConfig = {
                 apiKey: "AIzaSyBL4xbOiK8YhBpO3IHnzAzIZYdrhmMEt1A",
@@ -1583,15 +1586,62 @@
             let fbDb = null;
             let fbApi = {};
             let isCloudReady = false;
+            const memoryStorageMap = new Map();
 
+            // 檢測指定 Storage 是否真的寫得進足夠長度的認證憑證（避免 Firebase 1-byte 假通過）
+            function hasStorageQuota(storageObj, testChars = 32768) {
+                try {
+                    if (!storageObj) return false;
+                    const probeKey = "__tony_quota_probe__";
+                    storageObj.setItem(probeKey, "Q".repeat(testChars));
+                    storageObj.removeItem(probeKey);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            // 安全清除殘留或損毀的 Firebase 暫存鍵值
+            function cleanupStaleFirebaseStorage() {
+                try {
+                    const keysToRemove = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        if (k && /^firebase:(previous_websocket_failure|redirectUser|pendingRedirect|host:)/i.test(k)) {
+                            keysToRemove.push(k);
+                        }
+                    }
+                    keysToRemove.forEach(k => localStorage.removeItem(k));
+                } catch (_) {}
+            }
+
+            // 三層容錯讀取與寫入（localStorage -> sessionStorage -> Memory），滿載時絕不報錯遺失
             function safeGetStorage(key, fallback = "") {
-                try { return localStorage.getItem(key) ?? fallback; } catch (_) { return fallback; }
+                try {
+                    const v = localStorage.getItem(key);
+                    if (v !== null) return v;
+                } catch (_) {}
+                try {
+                    const sv = sessionStorage.getItem(key);
+                    if (sv !== null) return sv;
+                } catch (_) {}
+                return memoryStorageMap.has(key) ? memoryStorageMap.get(key) : fallback;
             }
             function safeSetStorage(key, val) {
-                try { localStorage.setItem(key, val); } catch (_) {}
+                const strVal = String(val);
+                memoryStorageMap.set(key, strVal);
+                try {
+                    localStorage.setItem(key, strVal);
+                    return;
+                } catch (_) {}
+                try {
+                    sessionStorage.setItem(key, strVal);
+                } catch (_) {}
             }
             function safeRemoveStorage(key) {
+                memoryStorageMap.delete(key);
                 try { localStorage.removeItem(key); } catch (_) {}
+                try { sessionStorage.removeItem(key); } catch (_) {}
             }
             function withTimeout(promise, ms = 6000, msg = "連線逾時") {
                 return Promise.race([
@@ -2016,7 +2066,25 @@
                 banner.classList.remove("hidden");
             }
 
+            function isStorageQuotaError(err) {
+                const msg = `${err?.name || ""} ${err?.code || ""} ${err?.message || ""}`;
+                return /QuotaExceededError|exceeded the quota|setItem.*Storage/i.test(msg);
+            }
+
+            async function switchToQuotaSafePersistence() {
+                if (!fbAuth || !fbApi.setPersistence) return;
+                const fallbackPersistence = hasStorageQuota(window.sessionStorage, 16384) && fbApi.browserSessionPersistence
+                    ? fbApi.browserSessionPersistence
+                    : fbApi.inMemoryPersistence;
+                if (fallbackPersistence) {
+                    await fbApi.setPersistence(fbAuth, fallbackPersistence).catch(() => {});
+                }
+            }
+
             function translateAuthError(err) {
+                if (isStorageQuotaError(err)) {
+                    return "瀏覽器的 localStorage 空間已被同網域其他網頁塞滿！系統已自動為您切換為免佔空間模式，請再點擊一次登入即可進入（或點擊下方黃色按鈕清理快取）。";
+                }
                 const code = err?.code || "";
                 if (code === "auth/email-already-in-use") return "此 Email 已經註冊過，請直接切換至「會員登入」或使用忘記密碼功能。";
                 if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
@@ -2051,7 +2119,21 @@
                     : "py-2.5 rounded-lg text-xs sm:text-sm font-bold text-slate-400 hover:text-white transition-all";
             }
 
-            // 免驗證 / 本機預覽一鍵進入通道（若在 Email 欄輸入創作者信箱亦可預覽管理後台）
+            // 一鍵釋放同網域滿載的瀏覽器 localStorage 快取（完整保留 Gemini API Key）
+            document.getElementById("clearDomainStorageBtn").addEventListener("click", async () => {
+                const ok = await askConfirm("釋放瀏覽器快取空間", "這會清除目前網域下塞滿瀏覽器的舊快取資料（會自動保留您的 Gemini API Key），解決 Storage 空間不足問題。確定執行嗎？");
+                if (!ok) return;
+                const savedKey = currentApiKey || safeGetStorage("gemini_api_key", "");
+                try {
+                    localStorage.clear();
+                    if (savedKey) localStorage.setItem("gemini_api_key", savedKey);
+                } catch (_) {}
+                document.getElementById("clearDomainStorageBtn").classList.add("hidden");
+                document.getElementById("clearDomainStorageBtn").classList.remove("flex");
+                showToast("已成功釋放瀏覽器儲存空間！現在可正常使用所有儲存與登入功能。", "success");
+            });
+
+            // 免驗證 / 本機預覽一鍵進入通道
             document.getElementById("enterLocalPracticeBtn").addEventListener("click", async () => {
                 const typedEmail = document.getElementById("loginEmail").value.trim() || "student@tonystudio.local";
                 const isCreator = typedEmail.toLowerCase() === CREATOR_EMAIL;
@@ -2066,7 +2148,7 @@
                 showToast("已進入實戰工作台！所有藍圖、回測、ROI 與 Skill ZIP 封裝功能皆可完整操作。", "success");
             });
 
-            // Email 註冊
+            // Email 註冊（含 Storage Quota 滿載自動切換重試）
             document.getElementById("registerForm").addEventListener("submit", async (e) => {
                 e.preventDefault();
                 if (!isCloudReady || !fbAuth) {
@@ -2085,9 +2167,19 @@
                 isHandlingLoginVerification = true;
 
                 try {
-                    const cred = await withTimeout(fbApi.createUserWithEmailAndPassword(fbAuth, email, pwd), 8000, "雲端註冊連線逾時");
-                    const isCreator = email.toLowerCase() === CREATOR_EMAIL;
+                    let cred;
+                    try {
+                        cred = await withTimeout(fbApi.createUserWithEmailAndPassword(fbAuth, email, pwd), 8000, "雲端註冊連線逾時");
+                    } catch (firstErr) {
+                        if (isStorageQuotaError(firstErr)) {
+                            await switchToQuotaSafePersistence();
+                            cred = await withTimeout(fbApi.createUserWithEmailAndPassword(fbAuth, email, pwd), 8000, "雲端註冊連線逾時");
+                        } else {
+                            throw firstErr;
+                        }
+                    }
 
+                    const isCreator = email.toLowerCase() === CREATOR_EMAIL;
                     if (fbDb) {
                         await withTimeout(fbApi.setDoc(fbApi.doc(fbDb, "users", cred.user.uid), {
                             email,
@@ -2118,7 +2210,7 @@
                 }
             });
 
-            // Email 登入
+            // Email 登入（含 Storage Quota 滿載自動切換無感重試）
             document.getElementById("loginForm").addEventListener("submit", async (e) => {
                 e.preventDefault();
                 if (!isCloudReady || !fbAuth) {
@@ -2134,7 +2226,18 @@
                 isHandlingLoginVerification = true;
 
                 try {
-                    const cred = await withTimeout(fbApi.signInWithEmailAndPassword(fbAuth, email, pwd), 8000, "雲端登入連線逾時");
+                    let cred;
+                    try {
+                        cred = await withTimeout(fbApi.signInWithEmailAndPassword(fbAuth, email, pwd), 8000, "雲端登入連線逾時");
+                    } catch (firstErr) {
+                        if (isStorageQuotaError(firstErr)) {
+                            await switchToQuotaSafePersistence();
+                            cred = await withTimeout(fbApi.signInWithEmailAndPassword(fbAuth, email, pwd), 8000, "雲端登入連線逾時");
+                        } else {
+                            throw firstErr;
+                        }
+                    }
+
                     await withTimeout(cred.user.reload(), 3000).catch(() => {});
                     const isCreator = (cred.user.email || "").toLowerCase() === CREATOR_EMAIL;
 
@@ -2166,6 +2269,7 @@
                 }
                 isHandlingLoginVerification = true;
                 try {
+                    await switchToQuotaSafePersistence();
                     const cred = await withTimeout(fbApi.signInWithEmailAndPassword(fbAuth, lastUnverifiedCreds.email, lastUnverifiedCreds.pwd), 6000);
                     await withTimeout(fbApi.sendEmailVerification(cred.user), 6000);
                     await fbApi.signOut(fbAuth).catch(() => {});
@@ -2194,7 +2298,7 @@
                 }
             });
 
-            // Google 帳號快速登入
+            // Google 帳號快速登入（不加前置 await 避免彈窗被擋，成功後直接進入主系統）
             document.getElementById("googleSignInBtn").addEventListener("click", async () => {
                 if (!isCloudReady || !fbAuth) {
                     showAuthBanner("⚠️ 目前環境無法開啟 Google 雲端視窗，請點擊下方綠色「免驗證 / 本機預覽直接進入」按鈕！", "error");
@@ -2202,9 +2306,18 @@
                 }
                 try {
                     const provider = new fbApi.GoogleAuthProvider();
-                    await fbApi.signInWithPopup(fbAuth, provider);
+                    const cred = await fbApi.signInWithPopup(fbAuth, provider);
+                    if (cred && cred.user) {
+                        await enterAuthenticatedApp(cred.user);
+                    }
                 } catch (err) {
-                    if (err.code !== "auth/popup-closed-by-user") {
+                    if (isStorageQuotaError(err)) {
+                        await switchToQuotaSafePersistence();
+                        const clearBtn = document.getElementById("clearDomainStorageBtn");
+                        clearBtn.classList.remove("hidden");
+                        clearBtn.classList.add("flex");
+                        showAuthBanner(`✅ 已自動切換為「免快取佔用模式」繞過滿載限制！<strong>請再點擊一次「使用 Google 帳號快速登入」即可直接進入系統。</strong>`, "info");
+                    } else if (err.code !== "auth/popup-closed-by-user") {
                         showAuthBanner(`Google 登入提示：${translateAuthError(err)}`, "error");
                     }
                 }
@@ -2226,8 +2339,11 @@
                 showToast("會員資料設定完成，歡迎開始實戰演練！", "success");
             });
 
-            // 進入主程式（先切換 UI 再背景同步 Firestore，徹底杜絕等待回應卡住畫面）
+            // 進入主程式（具備防重複觸發保護，先切換 UI 再背景同步 Firestore）
             async function enterAuthenticatedApp(user) {
+                if (currentUser && currentUser.uid === user.uid && !document.getElementById("mainAppShell").classList.contains("hidden")) {
+                    return;
+                }
                 currentUser = user;
                 const emailLower = (user.email || "").toLowerCase();
                 const isCreator = emailLower === CREATOR_EMAIL;
@@ -2346,9 +2462,19 @@
             document.getElementById("logoutBtn").addEventListener("click", handleLogout);
             document.getElementById("mobileLogoutBtn").addEventListener("click", handleLogout);
 
-            // 非阻塞動態載入 Firebase（避開 IndexedDB 卡死與防追蹤外掛中斷）
+            // 非阻塞動態載入 Firebase：預先實測 64KB 寫入配額，滿載時自動改用 sessionStorage / inMemory
             async function initCloudAuthEngine() {
                 const statusBadge = document.getElementById("cloudStatusBadge");
+                cleanupStaleFirebaseStorage();
+                const localHasSpace = hasStorageQuota(window.localStorage, 32768);
+                const sessionHasSpace = hasStorageQuota(window.sessionStorage, 16384);
+
+                if (!localHasSpace) {
+                    const clearBtn = document.getElementById("clearDomainStorageBtn");
+                    clearBtn.classList.remove("hidden");
+                    clearBtn.classList.add("flex");
+                }
+
                 try {
                     const [appMod, authMod, fsMod] = await withTimeout(Promise.all([
                         import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
@@ -2357,14 +2483,26 @@
                     ]), 4500, "Firebase SDK 載入逾時");
 
                     const app = appMod.initializeApp(firebaseConfig);
+                    const persistenceList = localHasSpace
+                        ? [authMod.browserLocalPersistence, authMod.browserSessionPersistence, authMod.inMemoryPersistence]
+                        : (sessionHasSpace
+                            ? [authMod.browserSessionPersistence, authMod.inMemoryPersistence]
+                            : [authMod.inMemoryPersistence]);
+
                     let authInst;
                     try {
                         authInst = authMod.initializeAuth(app, {
-                            persistence: [authMod.browserLocalPersistence, authMod.inMemoryPersistence],
+                            persistence: persistenceList,
                             popupRedirectResolver: authMod.browserPopupRedirectResolver
                         });
                     } catch (_) {
                         authInst = authMod.getAuth(app);
+                        if (!localHasSpace) {
+                            await authMod.setPersistence(
+                                authInst,
+                                sessionHasSpace ? authMod.browserSessionPersistence : authMod.inMemoryPersistence
+                            ).catch(() => {});
+                        }
                     }
 
                     fbAuth = authInst;
@@ -2373,7 +2511,9 @@
                     isCloudReady = true;
 
                     if (statusBadge) {
-                        statusBadge.innerHTML = `<i class="fa-solid fa-cloud-bolt mr-1"></i>雲端驗證已就緒`;
+                        statusBadge.innerHTML = localHasSpace
+                            ? `<i class="fa-solid fa-cloud-bolt mr-1"></i>雲端驗證已就緒`
+                            : `<i class="fa-solid fa-shield-heart mr-1"></i>雲端驗證就緒（防滿載模式）`;
                     }
 
                     authMod.onAuthStateChanged(fbAuth, async (user) => {
