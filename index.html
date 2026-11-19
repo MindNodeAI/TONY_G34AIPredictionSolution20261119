@@ -279,11 +279,14 @@
                             <button type="submit" id="forgotSubmitBtn" class="w-full bg-neon hover:bg-sky-400 text-slate-950 font-extrabold py-2.5 rounded-xl text-sm transition-all">
                                 發送密碼重設信
                             </button>
+                            <button type="submit" class="w-full bg-neon hover:bg-sky-400 text-slate-950 font-extrabold py-2.5 rounded-xl text-sm transition-all">
+                                發送密碼重設信
+                            </button>
                         </form>
 
-                        <!-- 多元登入：Google 帳號快速登入 + 本機免卡關快速通道 -->
+                        <!-- 多元登入：Google 帳號快速登入 -->
                         <div id="googleAuthDividerWrap" class="mt-5 pt-5 border-t border-slate-800 space-y-2.5">
-                            <div class="text-center text-[11px] text-slate-500">或使用多元帳號與快速實戰通道</div>
+                            <div class="text-center text-[11px] text-slate-500">或使用多元帳號快速驗證</div>
                             <button type="button" id="googleSignInBtn" class="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold py-2.5 px-4 rounded-xl text-sm shadow transition-all flex items-center justify-center gap-2.5">
                                 <svg class="w-4 h-4" viewBox="0 0 24 24">
                                     <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/>
@@ -292,9 +295,6 @@
                                     <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5L1.6 17c1.9 3.9 5.8 7 10.4 7z"/>
                                 </svg>
                                 使用 Google 帳號快速登入 / 註冊
-                            </button>
-                            <button type="button" id="enterLocalPracticeBtn" class="w-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2" title="在預覽沙盒、本機直接開啟 HTML 或未授權網域時可一鍵進入完整工作台">
-                                <i class="fa-solid fa-bolt"></i> 免驗證 / 本機預覽直接進入實戰工作台
                             </button>
                             <button type="button" id="clearDomainStorageBtn" class="hidden w-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-gold font-bold py-2 px-4 rounded-xl text-xs transition-all items-center justify-center gap-2">
                                 <i class="fa-solid fa-broom"></i> 偵測到瀏覽器儲存空間已滿：點此一鍵釋放快取（保留 API Key）
@@ -2091,15 +2091,15 @@
                     return "帳號或密碼不正確，若尚未註冊請點選上方「免費註冊帳號」。";
                 }
                 if (code === "auth/operation-not-allowed" || code === "auth/configuration-not-found") {
-                    return "Firebase 後台尚未開啟此登入方式，請點擊下方綠色「免驗證 / 本機預覽直接進入實戰工作台」立即使用！";
+                    return "Firebase 後台尚未啟用此登入方式，請至 Firebase Console > Authentication > Sign-in method 開啟。";
                 }
                 if (code === "auth/unauthorized-domain" || code === "auth/operation-not-supported-in-this-environment") {
-                    return "目前開啟網域（如預覽視窗或本機直接開啟 HTML）尚未加入 Firebase 授權網域清單，請點擊下方綠色「免驗證 / 本機預覽直接進入」按鈕！";
+                    return "目前網域尚未加入 Firebase Authentication 授權網域清單，請使用 Email 帳號登入，或至 Firebase Console > Authentication > Settings > Authorized domains 新增此網域。";
                 }
                 if (code === "auth/network-request-failed") {
-                    return "網路環境攔截了驗證連線，請直接點擊下方綠色「免驗證 / 本機預覽直接進入實戰工作台」！";
+                    return "網路連線異常或遭到瀏覽器防追蹤擴充套件阻擋，請檢查網路環境後再試。";
                 }
-                return escapeHtml(err?.message || "驗證發生未預期錯誤，可點擊下方綠色按鈕直接進入工作台。");
+                return escapeHtml(err?.message || "驗證發生未預期錯誤，請稍後再試。");
             }
 
             function switchAuthMode(mode) {
@@ -2133,26 +2133,11 @@
                 showToast("已成功釋放瀏覽器儲存空間！現在可正常使用所有儲存與登入功能。", "success");
             });
 
-            // 免驗證 / 本機預覽一鍵進入通道
-            document.getElementById("enterLocalPracticeBtn").addEventListener("click", async () => {
-                const typedEmail = document.getElementById("loginEmail").value.trim() || "student@tonystudio.local";
-                const isCreator = typedEmail.toLowerCase() === CREATOR_EMAIL;
-                await enterAuthenticatedApp({
-                    uid: isCreator ? "local_creator_admin" : "local_practice_member",
-                    email: typedEmail,
-                    displayName: isCreator ? "TONY 楊文澤老師" : "實戰演練學員",
-                    emailVerified: true,
-                    isLocalMode: true,
-                    providerData: []
-                });
-                showToast("已進入實戰工作台！所有藍圖、回測、ROI 與 Skill ZIP 封裝功能皆可完整操作。", "success");
-            });
-
             // Email 註冊（含 Storage Quota 滿載自動切換重試）
             document.getElementById("registerForm").addEventListener("submit", async (e) => {
                 e.preventDefault();
                 if (!isCloudReady || !fbAuth) {
-                    showAuthBanner("⚠️ 目前環境無法連線 Firebase 雲端驗證（如本機直接開啟 HTML、預覽沙盒或防追蹤阻擋），請直接點擊下方綠色「免驗證 / 本機預覽直接進入」按鈕！", "error");
+                    showAuthBanner("⚠️ 正在連線雲端會員驗證伺服器，請確認網路暢通並稍候重試（若直接以 file:// 開啟檔案，請改用 Web Server 或正式網址開啟）。", "error");
                     return;
                 }
                 const identity = document.getElementById("regIdentity").value;
@@ -2214,7 +2199,7 @@
             document.getElementById("loginForm").addEventListener("submit", async (e) => {
                 e.preventDefault();
                 if (!isCloudReady || !fbAuth) {
-                    showAuthBanner("⚠️ 目前環境無法連線 Firebase 雲端驗證，請直接點擊下方綠色「免驗證 / 本機預覽直接進入」開啟工作台！", "error");
+                    showAuthBanner("⚠️ 無法連線 Firebase 雲端驗證中心，請確認網路環境正常且以 http/https 網址開啟本系統。", "error");
                     return;
                 }
                 const email = document.getElementById("loginEmail").value.trim();
@@ -2244,7 +2229,7 @@
                     if (!cred.user.emailVerified && !isCreator) {
                         lastUnverifiedCreds = { email, pwd };
                         await fbApi.signOut(fbAuth).catch(() => {});
-                        showAuthBanner(`⛔ <strong>信箱尚未完成驗證！</strong>請先至信箱點擊驗證連結（含垃圾郵件匣），或點擊下方綠色按鈕以預覽模式進入。`, "error");
+                        showAuthBanner(`⛔ <strong>信箱尚未完成驗證！</strong>系統已阻擋登入，請先至您的信箱點擊驗證連結（亦請檢查垃圾郵件匣）。`, "error");
                         document.getElementById("resendVerifyEmailBtn").classList.remove("hidden");
                         isHandlingLoginVerification = false;
                         return;
@@ -2301,7 +2286,7 @@
             // Google 帳號快速登入（不加前置 await 避免彈窗被擋，成功後直接進入主系統）
             document.getElementById("googleSignInBtn").addEventListener("click", async () => {
                 if (!isCloudReady || !fbAuth) {
-                    showAuthBanner("⚠️ 目前環境無法開啟 Google 雲端視窗，請點擊下方綠色「免驗證 / 本機預覽直接進入」按鈕！", "error");
+                    showAuthBanner("⚠️ 無法連線 Google 雲端驗證服務，請確認網路環境正常且以 http/https 網址開啟。", "error");
                     return;
                 }
                 try {
@@ -2333,7 +2318,7 @@
                 currentUserProfile = { ...currentUserProfile, identity, realName, company };
                 closeModal("googleProfileCompleteModal");
                 updateUserNavbarUI();
-                if (fbDb && !currentUser.isLocalMode) {
+                if (fbDb) {
                     withTimeout(fbApi.updateDoc(fbApi.doc(fbDb, "users", currentUser.uid), { identity, realName, company }), 3500).catch(() => {});
                 }
                 showToast("會員資料設定完成，歡迎開始實戰演練！", "success");
@@ -2351,7 +2336,7 @@
                 let profile = {
                     email: user.email || "",
                     realName: user.displayName || (isCreator ? "TONY 楊文澤老師" : "會員學員"),
-                    company: isCreator ? "TonyStudio / 脈動心聯" : (user.isLocalMode ? "本地實戰模式" : ""),
+                    company: isCreator ? "TonyStudio / 脈動心聯" : "",
                     identity: "TONY老師學員",
                     role: isCreator ? "admin" : "user",
                     isCreator,
@@ -2385,7 +2370,7 @@
 
                 renderConceptChart("loop");
 
-                if (fbDb && !user.isLocalMode) {
+                if (fbDb) {
                     (async () => {
                         try {
                             const userRef = fbApi.doc(fbDb, "users", user.uid);
@@ -2447,13 +2432,12 @@
             }
 
             const handleLogout = async () => {
-                const wasLocal = currentUser?.isLocalMode;
                 currentUser = null;
                 currentUserProfile = null;
                 sessionLoginCountedUid = null;
                 blueprintHistory = [];
                 document.getElementById("mobileMenu").classList.add("hidden");
-                if (fbAuth && !wasLocal) {
+                if (fbAuth) {
                     await fbApi.signOut(fbAuth).catch(() => {});
                 }
                 showAuthGateView();
@@ -2480,7 +2464,7 @@
                         import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
                         import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"),
                         import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js")
-                    ]), 4500, "Firebase SDK 載入逾時");
+                    ]), 6000, "Firebase SDK 載入逾時");
 
                     const app = appMod.initializeApp(firebaseConfig);
                     const persistenceList = localHasSpace
@@ -2511,15 +2495,13 @@
                     isCloudReady = true;
 
                     if (statusBadge) {
-                        statusBadge.innerHTML = localHasSpace
-                            ? `<i class="fa-solid fa-cloud-bolt mr-1"></i>雲端驗證已就緒`
-                            : `<i class="fa-solid fa-shield-heart mr-1"></i>雲端驗證就緒（防滿載模式）`;
+                        statusBadge.innerHTML = `<i class="fa-solid fa-lock mr-1"></i>會員專屬系統`;
                     }
 
                     authMod.onAuthStateChanged(fbAuth, async (user) => {
                         if (isHandlingLoginVerification) return;
                         if (!user) {
-                            if (!currentUser?.isLocalMode) showAuthGateView();
+                            showAuthGateView();
                             return;
                         }
                         const isCreator = (user.email || "").toLowerCase() === CREATOR_EMAIL;
@@ -2533,7 +2515,7 @@
                 } catch (_) {
                     isCloudReady = false;
                     if (statusBadge) {
-                        statusBadge.innerHTML = `<i class="fa-solid fa-laptop-code mr-1"></i>本地預覽就緒`;
+                        statusBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i>雲端連線異常`;
                     }
                 }
             }
@@ -2863,7 +2845,7 @@
                     blueprintHistory.unshift(record);
                     if (currentUser) {
                         safeSetStorage(`blueprint_history_${currentUser.uid}`, JSON.stringify(blueprintHistory));
-                        if (fbDb && !currentUser.isLocalMode) {
+                        if (fbDb) {
                             withTimeout(fbApi.updateDoc(fbApi.doc(fbDb, "users", currentUser.uid), { blueprintHistory }), 3500).catch(() => {});
                         }
                     }
@@ -4143,15 +4125,10 @@ ${TONY_COPYRIGHT_NOTICE}
             // =========================================================================
             async function loadAdminUsersList() {
                 const tbody = document.getElementById("adminUsersTableBody");
-                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-neon"><span class="loader w-5 h-5 mr-2"></span>正在讀取會員資料庫...</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-neon"><span class="loader w-5 h-5 mr-2"></span>正在讀取雲端會員資料庫...</td></tr>`;
 
-                if (!fbDb || currentUser?.isLocalMode) {
-                    allUsersCache = currentUserProfile ? [{
-                        id: currentUser?.uid || "local_creator_admin",
-                        ...currentUserProfile,
-                        blueprintHistory
-                    }] : [];
-                    renderAdminStatsAndTable();
+                if (!fbDb) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-rose-400">尚未連線至雲端會員資料庫，請檢查網路狀態。</td></tr>`;
                     return;
                 }
 
@@ -4442,7 +4419,7 @@ ${TONY_COPYRIGHT_NOTICE}
                     blueprintHistory = blueprintHistory.filter(h => h.id !== id);
                     if (currentUser) {
                         safeSetStorage(`blueprint_history_${currentUser.uid}`, JSON.stringify(blueprintHistory));
-                        if (fbDb && !currentUser.isLocalMode) {
+                        if (fbDb) {
                             withTimeout(fbApi.updateDoc(fbApi.doc(fbDb, "users", currentUser.uid), { blueprintHistory }), 3500).catch(() => {});
                         }
                     }
@@ -4480,7 +4457,7 @@ ${TONY_COPYRIGHT_NOTICE}
                         blueprintHistory = Array.from(map.values()).sort((a, b) => b.id - a.id);
                         if (currentUser) {
                             safeSetStorage(`blueprint_history_${currentUser.uid}`, JSON.stringify(blueprintHistory));
-                            if (fbDb && !currentUser.isLocalMode) {
+                            if (fbDb) {
                                 await withTimeout(fbApi.updateDoc(fbApi.doc(fbDb, "users", currentUser.uid), { blueprintHistory }), 3500).catch(() => {});
                             }
                         }
