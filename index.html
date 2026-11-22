@@ -174,6 +174,150 @@
 
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
+
+        /* ==================== AI 顧問助理：左上角縮放控制點、大中小字級與專業顧問報告編排 ==================== */
+        #aiAssistantPanel {
+            --chat-fs: 0.925rem;
+            --chat-h2: 1.05rem;
+            --chat-h3: 0.96rem;
+            --chat-table-fs: 0.83rem;
+            --chat-lh: 1.78;
+        }
+        #aiAssistantPanel[data-chat-size="sm"] {
+            --chat-fs: 0.8125rem;
+            --chat-h2: 0.92rem;
+            --chat-h3: 0.85rem;
+            --chat-table-fs: 0.75rem;
+            --chat-lh: 1.66;
+        }
+        #aiAssistantPanel[data-chat-size="md"] {
+            --chat-fs: 0.925rem;
+            --chat-h2: 1.05rem;
+            --chat-h3: 0.96rem;
+            --chat-table-fs: 0.83rem;
+            --chat-lh: 1.78;
+        }
+        #aiAssistantPanel[data-chat-size="lg"] {
+            --chat-fs: 1.0625rem;
+            --chat-h2: 1.2rem;
+            --chat-h3: 1.08rem;
+            --chat-table-fs: 0.94rem;
+            --chat-lh: 1.86;
+        }
+
+        /* 左上角縮放控制點 */
+        .chat-resize-handle-tl {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 30px;
+            height: 30px;
+            z-index: 30;
+            cursor: nwse-resize;
+            touch-action: none;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 5px;
+            border-top-left-radius: 1.5rem;
+            background: linear-gradient(135deg, rgba(212, 245, 122, 0.32) 0%, rgba(212, 245, 122, 0.08) 52%, transparent 53%);
+            transition: background 0.18s ease, transform 0.18s ease;
+        }
+        .chat-resize-handle-tl:hover,
+        .chat-resize-handle-tl.is-resizing {
+            background: linear-gradient(135deg, rgba(212, 245, 122, 0.65) 0%, rgba(212, 245, 122, 0.2) 56%, transparent 57%);
+        }
+
+        /* 聊天訊息與專業顧問報告排版 */
+        #chatHistory .chat-user-msg {
+            font-size: var(--chat-fs);
+            line-height: var(--chat-lh);
+        }
+        .chat-pro-report {
+            font-size: var(--chat-fs);
+            line-height: var(--chat-lh);
+            color: #1e2f2b;
+        }
+        .chat-pro-report > *:first-child { margin-top: 0 !important; }
+        .chat-pro-report > *:last-child { margin-bottom: 0 !important; }
+        .chat-pro-report h1,
+        .chat-pro-report h2 {
+            font-size: var(--chat-h2);
+            font-weight: 800;
+            color: #102420;
+            background: #f1f6f3;
+            border-left: 4px solid #1b5e4a;
+            border-bottom: none;
+            padding: 0.45rem 0.75rem;
+            border-radius: 0 0.55rem 0.55rem 0;
+            margin: 1.05rem 0 0.6rem;
+            line-height: 1.45;
+        }
+        .chat-pro-report h3 {
+            font-size: var(--chat-h3);
+            font-weight: 800;
+            color: #1b5e4a;
+            margin: 0.85rem 0 0.4rem;
+            line-height: 1.45;
+        }
+        .chat-pro-report p {
+            font-size: var(--chat-fs);
+            line-height: var(--chat-lh);
+            margin-bottom: 0.7rem;
+            color: #263834;
+        }
+        .chat-pro-report ul,
+        .chat-pro-report ol {
+            font-size: var(--chat-fs);
+            line-height: var(--chat-lh);
+            margin-left: 1.3rem;
+            margin-bottom: 0.8rem;
+            color: #263834;
+        }
+        .chat-pro-report li {
+            margin-bottom: 0.35rem;
+            padding-left: 0.15rem;
+        }
+        .chat-pro-report li::marker {
+            color: #1b5e4a;
+            font-weight: 700;
+        }
+        .chat-pro-report blockquote {
+            background: linear-gradient(90deg, #f6fce8 0%, #fcfdf9 100%);
+            border: 1px solid #d9f0a3;
+            border-left: 4px solid #65a30d;
+            border-radius: 0.75rem;
+            padding: 0.7rem 0.95rem;
+            margin: 0.65rem 0 0.9rem;
+            color: #1a2e05;
+        }
+        .chat-pro-report blockquote p {
+            margin-bottom: 0.25rem;
+            color: #1a2e05;
+        }
+        .chat-pro-report blockquote p:last-child { margin-bottom: 0; }
+        .chat-pro-report table {
+            font-size: var(--chat-table-fs);
+            margin: 0;
+            border: none;
+            border-radius: 0;
+        }
+        .chat-pro-report th,
+        .chat-pro-report td {
+            padding: 0.6rem 0.75rem;
+        }
+        .chat-pro-table-wrap {
+            overflow-x: auto;
+            margin: 0.85rem 0;
+            border-radius: 0.75rem;
+            border: 1px solid #d5d9d0;
+            background: #ffffff;
+        }
+        .chat-pro-report hr {
+            border: 0;
+            border-top: 1px dashed #d5d9d0;
+            margin: 0.95rem 0;
+        }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col">
@@ -1379,8 +1523,8 @@
                 </div>
             </section>
 
-            <!-- ==================== 模組檢視 4：平台創作者 TONY 楊文澤顧問簡介 ==================== -->
-            <section id="profile-section" data-module-panel="profile" class="hidden animate-fade-in">
+            <!-- ==================== 模組檢視 4：平台創作者 TONY 楊文澤顧問簡介与版權授權規範 ==================== -->
+            <section id="profile-section" data-module-panel="profile" class="hidden space-y-8 animate-fade-in">
                 <div class="clean-card rounded-3xl p-7 sm:p-10">
                     <div class="flex flex-col md:flex-row gap-8 items-center md:items-start">
                         <div class="shrink-0 text-center">
@@ -1427,6 +1571,29 @@
                                     </ul>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 平台版權宣告與 AI Skill 原創授權治理規範 -->
+                <div class="clean-card rounded-3xl p-7 sm:p-10 space-y-5">
+                    <div class="flex items-center gap-3 border-b border-slate-200 pb-4">
+                        <span class="w-10 h-10 rounded-2xl bg-[#fef3c7] border border-[#fde68a] text-[#92400e] flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-scale-balanced"></i>
+                        </span>
+                        <div>
+                            <span class="text-xs font-extrabold tracking-widest text-pine uppercase">COPYRIGHT &amp; GOVERNANCE</span>
+                            <h3 class="text-xl font-extrabold text-obsidian">平台版權宣告與 AI Skill 授權治理規範</h3>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                        <div class="soft-card rounded-2xl p-5 space-y-2">
+                            <div class="font-bold text-obsidian">1. 平台教材與系統架構著作權</div>
+                            <p>本平台（生活產業 AI 預測解決方案實戰學院）之課程方法論、互動介面設計、模擬教學資料集與視覺化藍圖架構，均由 <strong>TONY 楊文澤資深數位行銷科技顧問（TonyStudio）</strong> 原創設計開發，受著作權法與相關智慧財產權法令保護。</p>
+                        </div>
+                        <div class="soft-card rounded-2xl p-5 space-y-2">
+                            <div class="font-bold text-obsidian">2. TONY 自製 Skill 原創聲明與授權範圍</div>
+                            <p>使用或引用本平台產出之 Skill 套件及教材時，請保留創作者署名與版本資訊。除法令允許或另有書面授權外，不得移除署名、冒稱自行開發，或公開散布、轉售、轉授權原始套件與教材；另行商業開課、講師培訓及超出約定範圍之使用，須先取得權利人書面授權。</p>
                         </div>
                     </div>
                 </div>
@@ -1603,27 +1770,37 @@
     <!-- ==================== 彈窗 4：Mermaid 圖表全螢幕放大檢視器 ==================== -->
     <div id="mermaidZoomModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[98] hidden items-center justify-center p-4">
         <div class="clean-card rounded-3xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                <h4 id="mermaidZoomTitle" class="text-sm font-extrabold text-slate-900">圖表全螢幕檢視</h4>
-                <button type="button" id="closeMermaidZoomBtn" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <div class="bg-white px-6 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="px-2.5 py-1 rounded-md bg-obsidian text-limeTag text-[10px] font-extrabold tracking-wider uppercase shrink-0">MASTER BLUEPRINT</span>
+                    <h4 id="mermaidZoomTitle" class="text-sm sm:text-base font-extrabold text-obsidian truncate">圖表全螢幕檢視</h4>
+                </div>
+                <button type="button" id="closeMermaidZoomBtn" class="p-2 rounded-xl text-slate-400 hover:text-obsidian hover:bg-slate-100 transition-colors shrink-0">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
             </div>
-            <div id="mermaidZoomStage" class="p-8 overflow-auto flex-grow flex items-center justify-center bg-white"></div>
+            <div id="mermaidZoomStage" class="p-6 sm:p-8 overflow-auto flex-grow flex items-center justify-center bg-white"></div>
         </div>
     </div>
 
     <!-- ==================== 彈窗 5：自訂安全確認對話框 ==================== -->
-    <div id="customConfirmModal" class="fixed inset-0 bg-slate-900/45 backdrop-blur-sm z-[99] hidden items-center justify-center p-4">
-        <div class="clean-card rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
-            <h4 id="confirmModalTitle" class="text-base font-extrabold text-slate-900">確認執行操作</h4>
+    <div id="customConfirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[99] hidden items-center justify-center p-4">
+        <div class="clean-card rounded-3xl max-w-sm w-full p-6 sm:p-7 shadow-2xl space-y-4">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </span>
+                <h4 id="confirmModalTitle" class="text-base font-extrabold text-obsidian">確認執行操作</h4>
+            </div>
             <p id="confirmModalMessage" class="text-xs sm:text-sm text-slate-600 leading-relaxed"></p>
             <div class="flex justify-end gap-2.5 pt-2">
-                <button type="button" id="confirmCancelBtn" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">取消</button>
-                <button type="button" id="confirmOkBtn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold">確定執行</button>
+                <button type="button" id="confirmCancelBtn" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">取消</button>
+                <button type="button" id="confirmOkBtn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-colors">確定執行</button>
             </div>
         </div>
     </div>
 
-    <!-- ==================== 右下角浮動 TONY 老師 AI 助理（對齊 K42 深墨綠萊姆邊框膠囊按鈕） ==================== -->
+    <!-- ==================== 右下角浮動 TONY 老師 AI 助理（支援左上角縮放、字級切換與專業報告編排） ==================== -->
     <div id="aiAssistantWrapper" class="fixed bottom-5 right-5 z-[70] hidden flex-col items-end">
         <button type="button" id="toggleAssistantBtn" class="flex items-center gap-3 pl-2 pr-4 py-2 rounded-full bg-obsidian hover:bg-[#17332d] border-2 border-[#84cc16] shadow-[0_10px_28px_rgba(16,36,32,0.32)] hover:scale-[1.02] transition-all text-left">
             <div class="relative shrink-0">
@@ -1636,31 +1813,51 @@
             </div>
         </button>
 
-        <div id="aiAssistantPanel" class="hidden w-[350px] sm:w-[410px] h-[520px] clean-card rounded-3xl shadow-2xl flex-col overflow-hidden border border-[#d5d9d0]">
-            <div id="aiDragHandle" class="bg-obsidian px-4 py-3.5 border-b border-[#1f3b34] flex items-center justify-between cursor-move select-none">
-                <div class="flex items-center gap-2.5">
-                    <img src="https://firebasestorage.googleapis.com/v0/b/k16-tony-ai-wisdom-platform.firebasestorage.app/o/assets%2F6av64EOvvqQNAIoXqcPfHC5BBeF3%2F1787580326393_ChatGPT%20Image%202026%E5%B9%B46%E6%9C%8819%E6%97%A5%20%E4%B8%8A%E5%8D%8811_16_14.png?alt=media&token=3c85de41-f36f-46e5-a97a-7bc7eb83a027" alt="TONY" onerror="this.onerror=null;this.src='https://placehold.co/80x80/102420/d4f57a?text=AI';" class="w-8 h-8 rounded-full object-cover border border-limeTag">
-                    <div>
-                        <h4 class="text-xs font-extrabold text-white">TONY 老師 AI 顧問助理</h4>
-                        <span class="text-[10px] text-limeTag font-medium">支援繪製白底流程圖與實作問答</span>
+        <div id="aiAssistantPanel" data-chat-size="md" class="hidden relative w-[380px] sm:w-[460px] h-[580px] max-w-[calc(100vw-16px)] max-h-[calc(100vh-16px)] clean-card rounded-3xl shadow-2xl flex-col overflow-hidden border border-[#cbd2c9]">
+            <!-- 左上角視窗大小調整控制點（拖曳縮放／雙擊還原預設尺寸） -->
+            <div id="aiResizeHandleTL" class="chat-resize-handle-tl" title="拖曳左上角調整視窗大小（雙擊還原預設尺寸）">
+                <svg class="w-3.5 h-3.5 text-limeTag drop-shadow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M2 11L11 2M2 6L6 2M2 2h0.01"/>
+                </svg>
+            </div>
+
+            <!-- 頂部標題列（支援拖曳移動視窗 ＋ 大中小字級切換） -->
+            <div id="aiDragHandle" class="bg-obsidian pl-7 pr-3.5 py-3 border-b border-[#1f3b34] flex items-center justify-between gap-2 cursor-move select-none shrink-0">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <img src="https://firebasestorage.googleapis.com/v0/b/k16-tony-ai-wisdom-platform.firebasestorage.app/o/assets%2F6av64EOvvqQNAIoXqcPfHC5BBeF3%2F1787580326393_ChatGPT%20Image%202026%E5%B9%B46%E6%9C%8819%E6%97%A5%20%E4%B8%8A%E5%8D%8811_16_14.png?alt=media&token=3c85de41-f36f-46e5-a97a-7bc7eb83a027" alt="TONY" onerror="this.onerror=null;this.src='https://placehold.co/80x80/102420/d4f57a?text=AI';" class="w-8 h-8 rounded-full object-cover border border-limeTag shrink-0">
+                    <div class="min-w-0">
+                        <h4 class="text-xs font-extrabold text-white truncate">TONY 老師 AI 顧問助理</h4>
+                        <span id="aiSizeHintLabel" class="text-[10px] text-limeTag font-medium block truncate">↖ 左上角可調視窗大小 · 專業報告模式</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-1.5">
-                    <button type="button" id="clearChatBtn" class="text-xs text-slate-300 hover:text-white px-2 py-1" title="清除對話"><i class="fa-solid fa-broom"></i></button>
-                    <button type="button" id="closeAssistantBtn" class="text-slate-300 hover:text-white px-2 py-1"><i class="fa-solid fa-xmark"></i></button>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <!-- 字級大小切換：小 / 中(預設) / 大 -->
+                    <div class="inline-flex items-center bg-[#18332d] border border-[#2a4d44] rounded-lg p-0.5" title="調整對話文字大小">
+                        <button type="button" data-chat-font="sm" class="chat-font-btn px-2 py-0.5 rounded-md text-[11px] font-semibold text-slate-300 hover:text-white transition-all">小</button>
+                        <button type="button" data-chat-font="md" class="chat-font-btn px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-limeTag text-obsidian shadow-sm transition-all">中</button>
+                        <button type="button" data-chat-font="lg" class="chat-font-btn px-2 py-0.5 rounded-md text-[11px] font-semibold text-slate-300 hover:text-white transition-all">大</button>
+                    </div>
+                    <button type="button" id="clearChatBtn" class="text-xs text-slate-300 hover:text-white px-2 py-1 rounded-lg hover:bg-white/10 transition-colors" title="清除對話"><i class="fa-solid fa-broom"></i></button>
+                    <button type="button" id="closeAssistantBtn" class="text-slate-300 hover:text-white px-2 py-1 rounded-lg hover:bg-white/10 transition-colors" title="收合視窗"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             </div>
 
-            <div class="px-3 py-2 bg-white border-b border-slate-100 flex gap-1.5 overflow-x-auto text-[11px]">
-                <button type="button" data-quick-ask="請畫一張餐廳減少食材報廢的 AI 預測行動 Mermaid 流程圖" class="quick-ask-pill shrink-0 px-2.5 py-1 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-medium">📊 畫餐飲防報廢流程圖</button>
-                <button type="button" data-quick-ask="美業預約經常被臨時放鳥，只有 LINE 紀錄該如何做預測分流？" class="quick-ask-pill shrink-0 px-2.5 py-1 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-medium">💆‍♀️ 美業防放鳥策略</button>
+            <!-- 快捷提問膠囊列 -->
+            <div class="px-3.5 py-2 bg-white border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto text-[11px] shrink-0">
+                <span class="text-slate-400 font-semibold shrink-0">範例提問：</span>
+                <button type="button" data-quick-ask="請畫一張餐廳減少食材報廢的 AI 預測行動 Mermaid 流程圖，並附上高/中/低風險應對表" class="quick-ask-pill shrink-0 px-2.5 py-1 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-medium">📊 餐飲防報廢流程與對策表</button>
+                <button type="button" data-quick-ask="美業預約經常被臨時放鳥，只有 LINE 紀錄該如何做預測分流與 SOP？" class="quick-ask-pill shrink-0 px-2.5 py-1 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-medium">💆‍♀️ 美業防放鳥分流 SOP</button>
             </div>
 
-            <div id="chatHistory" class="flex-grow p-4 overflow-y-auto space-y-3 text-xs sm:text-sm bg-slate-50/50"></div>
+            <!-- 對話內容區 -->
+            <div id="chatHistory" class="flex-grow p-4 sm:p-5 overflow-y-auto space-y-4 bg-[#f6f6f2]"></div>
 
-            <form id="chatForm" class="p-3 bg-white border-t border-slate-200 flex gap-2">
-                <input type="text" id="chatInput" required placeholder="詢問課程問題，或請我畫流程圖..." class="field-input flex-grow px-3 py-2 rounded-xl text-xs sm:text-sm">
-                <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs">
+            <!-- 底部輸入列 -->
+            <form id="chatForm" class="p-3 bg-white border-t border-slate-200 flex gap-2 shrink-0">
+                <input type="text" id="chatInput" required placeholder="輸入營運問題，獲得結構化顧問解答或流程圖..." style="font-size: var(--chat-fs);" class="field-input flex-grow px-3.5 py-2 rounded-xl">
+                <button type="submit" class="bg-obsidian hover:bg-pine text-limeTag font-extrabold px-4 py-2 rounded-xl text-xs shrink-0 transition-colors flex items-center gap-1.5">
+                    <span>送出</span>
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </form>
@@ -4841,12 +5038,51 @@ ${TONY_COPYRIGHT_NOTICE}
                 e.target.value = "";
             });
 
+            // 專業顧問排版後處理：為聊天室內的表格自動加上防破版橫向捲軸外框
+            function enhanceChatReportTables(containerEl) {
+                if (!containerEl) return;
+                containerEl.querySelectorAll("table").forEach(tbl => {
+                    if (tbl.parentElement && tbl.parentElement.classList.contains("chat-pro-table-wrap")) return;
+                    const wrap = document.createElement("div");
+                    wrap.className = "chat-pro-table-wrap";
+                    tbl.parentNode.insertBefore(wrap, tbl);
+                    wrap.appendChild(tbl);
+                });
+            }
+
+            // Chatbot 字級大小設定（小 sm / 中 md [預設] / 大 lg）
+            function setChatFontSize(sizeKey) {
+                const validSize = ["sm", "md", "lg"].includes(sizeKey) ? sizeKey : "md";
+                const panel = document.getElementById("aiAssistantPanel");
+                if (panel) panel.setAttribute("data-chat-size", validSize);
+                document.querySelectorAll(".chat-font-btn").forEach(btn => {
+                    const active = btn.dataset.chatFont === validSize;
+                    btn.className = active
+                        ? "chat-font-btn px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-limeTag text-obsidian shadow-sm transition-all"
+                        : "chat-font-btn px-2 py-0.5 rounded-md text-[11px] font-semibold text-slate-300 hover:text-white transition-all";
+                });
+                safeSetStorage("tony_chat_font_size", validSize);
+            }
+
+            document.querySelectorAll(".chat-font-btn").forEach(btn => {
+                btn.addEventListener("click", () => setChatFontSize(btn.dataset.chatFont));
+            });
+            setChatFontSize(safeGetStorage("tony_chat_font_size", "md") || "md");
+
             function resetAssistantWelcome() {
                 chatConversation = [];
                 document.getElementById("chatHistory").innerHTML = `
-                    <div class="clean-card rounded-2xl p-4 text-slate-700 leading-relaxed">
-                        哈囉！我是 <strong class="text-sky-700">TONY 老師 AI 顧問助理</strong>（搭載 <code>gemini-4-hydrogen</code>）。<br>
-                        您可以詢問任何生活產業 AI 預測實作問題，也可以請我畫流程圖，產出的白底圖表支援一鍵下載 PNG / SVG！
+                    <div class="clean-card rounded-2xl overflow-hidden border border-[#dfe3dc]">
+                        <div class="px-4 py-2 bg-[#eef4f1] border-b border-[#dfe6e1] flex items-center justify-between text-[11px]">
+                            <span class="font-extrabold text-pine flex items-center gap-1.5"><i class="fa-solid fa-briefcase"></i> TONY 顧問實戰解析系統</span>
+                            <span class="text-slate-500 font-mono">${GEMINI_MODEL}</span>
+                        </div>
+                        <div class="p-4 chat-pro-report">
+                            <blockquote>
+                                <p><strong>💡 歡迎開啟專業顧問諮詢！</strong>所有回答將採用「核心結論摘要 → 診斷與決策表格 → 落地執行步驟」的結構化報告格式呈現。</p>
+                            </blockquote>
+                            <p>您可以隨時透過右上角切換 <strong>小／中／大</strong> 字級，或拖曳視窗 <strong>↖ 左上角控制點</strong> 自由放大閱讀空間與圖表。</p>
+                        </div>
                     </div>
                 `;
             }
@@ -4854,15 +5090,18 @@ ${TONY_COPYRIGHT_NOTICE}
 
             async function sendChatMessage(userText) {
                 const chatBox = document.getElementById("chatHistory");
+                const userWrap = document.createElement("div");
+                userWrap.className = "flex justify-end";
                 const userBubble = document.createElement("div");
-                userBubble.className = "bg-sky-600 text-white font-medium rounded-2xl rounded-tr-sm p-3 ml-8 shadow-sm";
+                userBubble.className = "chat-user-msg bg-obsidian text-white font-medium rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[85%] shadow-sm";
                 userBubble.textContent = userText;
-                chatBox.appendChild(userBubble);
+                userWrap.appendChild(userBubble);
+                chatBox.appendChild(userWrap);
 
-                const loadingBubble = document.createElement("div");
-                loadingBubble.className = "clean-card rounded-2xl p-3 mr-6 text-sky-700 flex items-center gap-2";
-                loadingBubble.innerHTML = `<span class="loader w-4 h-4"></span> 思考與繪圖中...`;
-                chatBox.appendChild(loadingBubble);
+                const loadingCard = document.createElement("div");
+                loadingCard.className = "clean-card rounded-2xl p-4 mr-2 text-pine flex items-center gap-2.5 border border-[#dfe3dc]";
+                loadingCard.innerHTML = `<span class="loader w-4 h-4 shrink-0"></span><span class="text-xs font-bold">TONY 顧問正在撰寫結構化分析報告...</span>`;
+                chatBox.appendChild(loadingCard);
                 chatBox.scrollTop = chatBox.scrollHeight;
 
                 const nextTurn = { role: "user", parts: [{ text: userText }] };
@@ -4870,7 +5109,13 @@ ${TONY_COPYRIGHT_NOTICE}
 
                 try {
                     const { text, rawParts } = await callGeminiAI({
-                        systemInstruction: `你是 TONY 楊文澤老師的專屬 AI 顧問助理，專精生活產業（餐飲、零售、美業、旅宿、健康）AI 預測解決方案。請用繁體中文親切專業回答。若適合用視覺圖表說明，請主動附上合法的 ${FENCE}mermaid 流程圖或圓餅圖語法區塊。`,
+                        systemInstruction: `你是 TONY 楊文澤老師的專屬 AI 顧問助理，專精生活產業（餐飲、零售、美業、旅宿、健康照護）AI 預測解決方案。
+請務必以「專業商業顧問報告」的嚴謹 Markdown 編排格式回答（繁體中文），禁止輸出雜亂無章的大段純文字：
+1. 開頭第一段請固定使用引言區塊（\`> **💡 核心結論摘要：** ...\`），用 1～2 句話精準給出決策結論。
+2. 依問題性質使用清晰的二級標題（如 \`## 一、關鍵診斷與預測邏輯\`、\`## 二、分級決策與行動對照表\`、\`## 三、門市落地執行 SOP\`）分段。
+3. 只要涉及風險分級、方案比較、指標欄位或角色分工，請優先使用 **Markdown 表格** 整齊呈現。
+4. 條列重點請採用「**- 關鍵詞加粗：** 具體說明」或編號步驟 \`1. 2. 3.\`，段落間保持清晰層次。
+5. 若適合用視覺圖表輔助或使用者要求畫圖，請附上合法的 ${FENCE}mermaid 流程圖或圓餅圖語法區塊（節點文字請用雙引號包覆，避免語法錯誤）。`,
                         contents: historyToSend,
                         thinkingLevel: "low"
                     });
@@ -4878,12 +5123,34 @@ ${TONY_COPYRIGHT_NOTICE}
                     chatConversation.push(nextTurn);
                     chatConversation.push({ role: "model", parts: rawParts });
 
-                    loadingBubble.className = "clean-card rounded-2xl rounded-tl-sm p-3.5 mr-4 markdown-body";
-                    await renderMarkdownWithMermaid(loadingBubble, text, "AI 助理圖解");
+                    const timeStr = new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false });
+                    loadingCard.className = "clean-card rounded-2xl overflow-hidden border border-[#dfe3dc] shadow-sm animate-fade-in";
+                    loadingCard.innerHTML = `
+                        <div class="px-4 py-2 bg-[#eef4f1] border-b border-[#dfe6e1] flex items-center justify-between gap-2">
+                            <span class="text-[11px] font-extrabold text-obsidian flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-pine inline-block"></span>TONY 顧問實戰報告
+                                <span class="text-[10px] text-slate-400 font-mono font-normal ml-1">${timeStr}</span>
+                            </span>
+                            <button type="button" class="copy-chat-reply-btn px-2 py-0.5 rounded-md bg-white hover:bg-slate-50 border border-[#cfd8d3] text-[11px] font-bold text-pine transition-colors">
+                                <i class="fa-regular fa-copy mr-1"></i>複製解答
+                            </button>
+                        </div>
+                        <div class="p-4 sm:p-5 markdown-body chat-pro-report"></div>
+                    `;
+
+                    const reportBody = loadingCard.querySelector(".chat-pro-report");
+                    await renderMarkdownWithMermaid(reportBody, text, "顧問分析圖解");
+                    enhanceChatReportTables(reportBody);
+
+                    const copyBtn = loadingCard.querySelector(".copy-chat-reply-btn");
+                    if (copyBtn) {
+                        copyBtn.addEventListener("click", () => copyTextSafe(text, "已複製顧問報告 Markdown 內容！"));
+                    }
+
                     chatBox.scrollTop = chatBox.scrollHeight;
                 } catch (err) {
-                    loadingBubble.className = "bg-rose-50 border border-rose-200 rounded-2xl p-3 text-rose-700 text-xs";
-                    loadingBubble.textContent = err.message;
+                    loadingCard.className = "bg-rose-50 border border-rose-200 rounded-2xl p-3.5 text-rose-700 text-xs font-medium";
+                    loadingCard.textContent = err.message;
                 }
             }
 
@@ -4914,28 +5181,108 @@ ${TONY_COPYRIGHT_NOTICE}
                 document.getElementById("toggleAssistantBtn").classList.remove("hidden");
             });
 
-            // AI 助理面板滑鼠拖曳支援
+            // AI 助理面板：左上角拖曳調整大小 ＋ 標題列拖曳移動位置（同時支援滑鼠與觸控）
             (function () {
-                const handle = document.getElementById("aiDragHandle");
+                const dragHandle = document.getElementById("aiDragHandle");
+                const resizeHandleTL = document.getElementById("aiResizeHandleTL");
+                const panel = document.getElementById("aiAssistantPanel");
                 const wrap = document.getElementById("aiAssistantWrapper");
-                let dragging = false, startX = 0, startY = 0, origRight = 20, origBottom = 20;
-                handle.addEventListener("mousedown", (e) => {
-                    if (e.target.closest("button")) return;
-                    dragging = true;
-                    startX = e.clientX;
-                    startY = e.clientY;
+                const hintLabel = document.getElementById("aiSizeHintLabel");
+
+                let mode = null; // "move" | "resize-tl"
+                let startX = 0, startY = 0;
+                let origRight = 20, origBottom = 20;
+                let startW = 460, startH = 580;
+
+                const getPoint = (ev) => {
+                    if (ev.touches && ev.touches.length > 0) {
+                        return { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
+                    }
+                    return { x: ev.clientX, y: ev.clientY };
+                };
+
+                // 1. 左上角調整視窗大小（往左上拉放大、往右下推縮小）
+                const startResize = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    mode = "resize-tl";
+                    const pt = getPoint(e);
+                    startX = pt.x;
+                    startY = pt.y;
+                    const rect = panel.getBoundingClientRect();
+                    startW = rect.width;
+                    startH = rect.height;
+                    resizeHandleTL.classList.add("is-resizing");
+                    document.body.style.userSelect = "none";
+                };
+
+                resizeHandleTL.addEventListener("mousedown", startResize);
+                resizeHandleTL.addEventListener("touchstart", startResize, { passive: false });
+
+                // 雙擊左上角控制點：快速還原預設尺寸
+                resizeHandleTL.addEventListener("dblclick", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    panel.style.width = "";
+                    panel.style.height = "";
+                    if (hintLabel) hintLabel.textContent = "↖ 左上角可調視窗大小 · 專業報告模式";
+                    showToast("已還原 AI 助理預設視窗大小", "info");
+                });
+
+                // 2. 標題列拖曳移動視窗位置
+                const startMove = (e) => {
+                    if (e.target.closest("button") || e.target.closest("#aiResizeHandleTL")) return;
+                    mode = "move";
+                    const pt = getPoint(e);
+                    startX = pt.x;
+                    startY = pt.y;
                     const rect = wrap.getBoundingClientRect();
                     origRight = window.innerWidth - rect.right;
                     origBottom = window.innerHeight - rect.bottom;
-                });
-                window.addEventListener("mousemove", (e) => {
-                    if (!dragging) return;
-                    const dx = e.clientX - startX;
-                    const dy = e.clientY - startY;
-                    wrap.style.right = `${Math.max(8, origRight - dx)}px`;
-                    wrap.style.bottom = `${Math.max(8, origBottom - dy)}px`;
-                });
-                window.addEventListener("mouseup", () => { dragging = false; });
+                    document.body.style.userSelect = "none";
+                };
+
+                dragHandle.addEventListener("mousedown", startMove);
+                dragHandle.addEventListener("touchstart", startMove, { passive: true });
+
+                const onPointerMove = (e) => {
+                    if (!mode) return;
+                    const pt = getPoint(e);
+                    const dx = pt.x - startX;
+                    const dy = pt.y - startY;
+
+                    if (mode === "resize-tl") {
+                        if (e.cancelable) e.preventDefault();
+                        const wrapRect = wrap.getBoundingClientRect();
+                        const maxAllowedW = Math.max(340, Math.min(980, wrapRect.right - 12));
+                        const maxAllowedH = Math.max(420, Math.min(880, wrapRect.bottom - 12));
+                        const nextW = Math.round(Math.min(maxAllowedW, Math.max(340, startW - dx)));
+                        const nextH = Math.round(Math.min(maxAllowedH, Math.max(420, startH - dy)));
+                        panel.style.width = `${nextW}px`;
+                        panel.style.height = `${nextH}px`;
+                        if (hintLabel) hintLabel.textContent = `視窗尺寸：${nextW} × ${nextH} px（雙擊左上角還原）`;
+                    } else if (mode === "move") {
+                        const maxR = Math.max(8, window.innerWidth - 120);
+                        const maxB = Math.max(8, window.innerHeight - 80);
+                        wrap.style.right = `${Math.min(maxR, Math.max(8, origRight - dx))}px`;
+                        wrap.style.bottom = `${Math.min(maxB, Math.max(8, origBottom - dy))}px`;
+                    }
+                };
+
+                const endPointer = () => {
+                    if (!mode) return;
+                    if (mode === "resize-tl" && hintLabel) {
+                        hintLabel.textContent = "↖ 左上角可調視窗大小 · 專業報告模式";
+                    }
+                    mode = null;
+                    resizeHandleTL.classList.remove("is-resizing");
+                    document.body.style.userSelect = "";
+                };
+
+                window.addEventListener("mousemove", onPointerMove);
+                window.addEventListener("touchmove", onPointerMove, { passive: false });
+                window.addEventListener("mouseup", endPointer);
+                window.addEventListener("touchend", endPointer);
             })();
 
             function refreshApiKeyBadge() {
